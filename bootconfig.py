@@ -32,7 +32,7 @@ parameter = get_bootparam(BOOT, "parameter")
 print("Content-type: text/plain\n")
 print("#!ipxe\n");
 print("#booting option {0:s}\n".format(BOOT));
-print("kernel {0:s} {1:s}".format(kernel, parameter));
+print("kernel {0:s} initrd={1:s} {2:s}".format(kernel, initrd, parameter));
 print("initrd {0:s}".format(initrd));
 print("boot\n");
 
