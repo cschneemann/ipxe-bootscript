@@ -3,7 +3,7 @@
 Simple script that runs on a webserver and returns a default bootconfiguration or a host/group specific one to ipxe Clients.
 
 
-## Example bootconfig.yalm
+## Example bootconfig.yaml
 
 ```
 default:
