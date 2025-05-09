@@ -31,3 +31,18 @@ Alias /ipxe /opt/ipxe-bootconfig
     Require all granted
 </Directory>
 ```
+
+## DHCP configuration
+
+```
+option client-arch code 93 = unsigned integer 16;
+if exists user-class and option user-class = "iPXE" {
+      filename "http://192.168.254.3/ipxe/bootconfig.py?boot=${net0/mac}";
+} else {
+      if option client-arch = 00:07 {
+         filename "ipxe.efi";
+      }  else {
+         filename "ipxe.pxe";
+      }
+}
+```
