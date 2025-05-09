@@ -10,11 +10,14 @@ def translate(s):
     return s
 
 def get_bootparam(obj, conf_type):
-    try:
-        config[obj][conf_type]
-    except KeyError:
-        obj = "default"
-    return config[obj][conf_type]
+    if obj in config and conf_type in config[obj]:
+        return config[obj][conf_type]
+
+    for key in config:
+        if key.startswith(obj) and conf_type in config[key]:
+            return config[key][conf_type]
+
+    return config["default"][conf_type]
 
 with open(configfile, 'r') as yamlobjects:
     config = yaml.load(yamlobjects, Loader=yaml.FullLoader)
