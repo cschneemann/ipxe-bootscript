@@ -228,7 +228,7 @@ The WebUI allows creating, editing, and deleting boot config entries. The SQLite
 
 ### Apache deployment
 
-```
+```dhcp
 option client-arch code 93 = unsigned integer 16;
 if exists user-class and option user-class = "iPXE" {
       filename "http://<server-ip>/ipxe/bootconfig.py?boot=${net0/mac}";
@@ -243,7 +243,7 @@ if exists user-class and option user-class = "iPXE" {
 
 ### Container deployment
 
-```
+```dhcp
 option client-arch code 93 = unsigned integer 16;
 if exists user-class and option user-class = "iPXE" {
       filename "http://<server-ip>:8080/cgi-bin/bootconfig.py?boot=${net0/mac}";
