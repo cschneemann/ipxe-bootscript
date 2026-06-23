@@ -234,6 +234,7 @@ Environment variables:
 | `ADMIN_HOST`       | `127.0.0.1`   | Bind address for the admin WebUI               |
 | `ADMIN_PORT`       | `5000`        | Port for the admin WebUI                       |
 | `ADMIN_SECRET_KEY` | random        | Flask secret key (set for persistent sessions) |
+| `API_TOKEN`        | —             | Bearer token for REST API authentication       |
 
 ---
 
@@ -247,6 +248,44 @@ python3 admin.py
 ```
 
 The WebUI allows creating, editing, and deleting boot config entries. The SQLite table is created automatically on first start if it does not exist yet.
+
+## REST API
+
+Set the `API_TOKEN` environment variable to enable the REST API. All requests require the header `Authorization: Bearer <token>`.
+
+| Method   | Path                        | Description          |
+|----------|-----------------------------|----------------------|
+| `GET`    | `/api/v1/entries`           | List all entries     |
+| `GET`    | `/api/v1/entries/<id>`      | Get a single entry   |
+| `POST`   | `/api/v1/entries`           | Create a new entry   |
+| `PUT`    | `/api/v1/entries/<id>`      | Update an entry      |
+| `DELETE` | `/api/v1/entries/<id>`      | Delete an entry      |
+
+`<id>` is the identifier (e.g. `default` or `aa:bb:cc:dd:ee:ff`).
+
+```bash
+export API_TOKEN="secret"
+
+# List all entries
+curl -H "Authorization: Bearer $API_TOKEN" http://localhost:5000/api/v1/entries
+
+# Create an entry
+curl -X POST -H "Authorization: Bearer $API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier":"aa:bb:cc:dd:ee:ff","kernel":"http://example.com/linux",
+       "initrd":"http://example.com/initrd","parameter":"splash=silent"}' \
+  http://localhost:5000/api/v1/entries
+
+# Update an entry (only send fields to change)
+curl -X PUT -H "Authorization: Bearer $API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"parameter":"splash=silent console=tty0"}' \
+  http://localhost:5000/api/v1/entries/aa:bb:cc:dd:ee:ff
+
+# Delete an entry
+curl -X DELETE -H "Authorization: Bearer $API_TOKEN" \
+  http://localhost:5000/api/v1/entries/aa:bb:cc:dd:ee:ff
+```
 
 ---
 

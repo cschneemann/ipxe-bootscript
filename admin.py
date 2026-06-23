@@ -1,12 +1,27 @@
 #!/usr/bin/env python3
+import functools
 import os
 import sqlite3
 
 import yaml
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("ADMIN_SECRET_KEY", os.urandom(24))
+
+API_TOKEN = os.environ.get("API_TOKEN", "")
+
+
+def require_token(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if not API_TOKEN:
+            return jsonify({"error": "API token not configured (set API_TOKEN env var)"}), 503
+        auth = request.headers.get("Authorization", "")
+        if auth != f"Bearer {API_TOKEN}":
+            return jsonify({"error": "Unauthorized"}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 CONFIGFILE = os.path.join(os.path.dirname(__file__), "bootconfig.yaml")
 
@@ -107,6 +122,102 @@ def delete(identifier):
     conn.close()
     flash(f"Eintrag '{identifier}' gelöscht.", "success")
     return redirect(url_for("index"))
+
+
+# ---------------------------------------------------------------------------
+# REST API  –  /api/v1/entries
+# ---------------------------------------------------------------------------
+
+@app.route("/api/v1/entries", methods=["GET"])
+@require_token
+def api_list():
+    conn = get_db()
+    entries = conn.execute(
+        "SELECT * FROM bootconfig ORDER BY identifier = 'default' DESC, identifier"
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(e) for e in entries])
+
+
+@app.route("/api/v1/entries/<path:identifier>", methods=["GET"])
+@require_token
+def api_get(identifier):
+    conn = get_db()
+    entry = conn.execute(
+        "SELECT * FROM bootconfig WHERE identifier=?", (identifier,)
+    ).fetchone()
+    conn.close()
+    if entry is None:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(dict(entry))
+
+
+@app.route("/api/v1/entries", methods=["POST"])
+@require_token
+def api_create():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+    identifier = (data.get("identifier") or "").strip()
+    kernel     = (data.get("kernel")     or "").strip()
+    initrd     = (data.get("initrd")     or "").strip()
+    parameter  = (data.get("parameter")  or "").strip()
+    if not all([identifier, kernel, initrd, parameter]):
+        return jsonify({"error": "All fields required: identifier, kernel, initrd, parameter"}), 400
+    try:
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO bootconfig (identifier, kernel, initrd, parameter) VALUES (?, ?, ?, ?)",
+            (identifier, kernel, initrd, parameter),
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"identifier": identifier, "kernel": kernel,
+                        "initrd": initrd, "parameter": parameter}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"error": f"Identifier '{identifier}' already exists"}), 409
+
+
+@app.route("/api/v1/entries/<path:identifier>", methods=["PUT"])
+@require_token
+def api_update(identifier):
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+    conn = get_db()
+    entry = conn.execute(
+        "SELECT * FROM bootconfig WHERE identifier=?", (identifier,)
+    ).fetchone()
+    if entry is None:
+        conn.close()
+        return jsonify({"error": "Not found"}), 404
+    kernel    = (data.get("kernel")    or entry["kernel"]).strip()
+    initrd    = (data.get("initrd")    or entry["initrd"]).strip()
+    parameter = (data.get("parameter") or entry["parameter"]).strip()
+    conn.execute(
+        "UPDATE bootconfig SET kernel=?, initrd=?, parameter=? WHERE identifier=?",
+        (kernel, initrd, parameter, identifier),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"identifier": identifier, "kernel": kernel,
+                    "initrd": initrd, "parameter": parameter})
+
+
+@app.route("/api/v1/entries/<path:identifier>", methods=["DELETE"])
+@require_token
+def api_delete(identifier):
+    conn = get_db()
+    entry = conn.execute(
+        "SELECT * FROM bootconfig WHERE identifier=?", (identifier,)
+    ).fetchone()
+    if entry is None:
+        conn.close()
+        return jsonify({"error": "Not found"}), 404
+    conn.execute("DELETE FROM bootconfig WHERE identifier=?", (identifier,))
+    conn.commit()
+    conn.close()
+    return "", 204
 
 
 if __name__ == "__main__":
