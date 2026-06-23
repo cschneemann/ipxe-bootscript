@@ -2,10 +2,9 @@
 
 Simple script that runs on a webserver and returns a default bootconfiguration or a host/group specific one to ipxe Clients.
 
-
 ## Example bootconfig.yaml
 
-```
+```yaml
 default:
     kernel: "http://download.opensuse.org/tumbleweed/repo/oss/boot/x86_64/loader/linux"
     initrd: "http://download.opensuse.org/tumbleweed/repo/oss/boot/x86_64/loader/initrd"
@@ -21,7 +20,7 @@ default:
 
 ## Apache2 configuration
 
-```
+```apache
 Alias /ipxe /opt/ipxe-bootconfig
 
 <Directory /opt/ipxe-bootconfig>
@@ -58,12 +57,72 @@ server {
 }
 ```
 
+## Container (Podman / Docker)
+
+```bash
+# Build
+podman build -f container/Containerfile -t ipxe-bootscript .
+
+# Run
+podman run -d \
+  -p 8080:8080 \
+  -v /etc/ipxe/bootconfig.yaml:/app/bootconfig.yaml:ro \
+  ipxe-bootscript
+```
+
+The `BOOT_PORT` environment variable controls the listening port (default: `8080`).
+
+## Reverse proxy for the container
+
+A reverse proxy in front of the container allows keeping the canonical
+`/ipxe/bootconfig.py` URL and avoids exposing port 8080 directly.
+
+### Apache2
+
+Requires `mod_proxy` and `mod_proxy_http`:
+
+```bash
+a2enmod proxy proxy_http
+```
+
+```apache
+<VirtualHost *:80>
+    ServerName ipxe.example.com
+
+    ProxyPass        /ipxe/bootconfig.py http://127.0.0.1:8080/cgi-bin/bootconfig.py
+    ProxyPassReverse /ipxe/bootconfig.py http://127.0.0.1:8080/cgi-bin/bootconfig.py
+</VirtualHost>
+```
+
+### nginx
+
+```nginx
+server {
+    listen 80;
+    server_name ipxe.example.com;
+
+    location = /ipxe/bootconfig.py {
+        proxy_pass http://127.0.0.1:8080/cgi-bin/bootconfig.py;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+With a reverse proxy in place the DHCP filename URL stays the same as for
+a direct Apache/nginx deployment — no `/cgi-bin/` prefix needed:
+
+```dhcp
+filename "http://<server-ip>/ipxe/bootconfig.py?boot=${net0/mac}";
+```
+
 ## DHCP configuration
 
-```
+### Apache / nginx
+
+```dhcp
 option client-arch code 93 = unsigned integer 16;
 if exists user-class and option user-class = "iPXE" {
-      filename "http://192.168.254.3/ipxe/bootconfig.py?boot=${net0/mac}";
+      filename "http://<server-ip>/ipxe/bootconfig.py?boot=${net0/mac}";
 } else {
       if option client-arch = 00:07 {
          filename "ipxe.efi";
@@ -72,3 +131,20 @@ if exists user-class and option user-class = "iPXE" {
       }
 }
 ```
+
+### Container
+
+```dhcp
+option client-arch code 93 = unsigned integer 16;
+if exists user-class and option user-class = "iPXE" {
+      filename "http://<server-ip>:8080/cgi-bin/bootconfig.py?boot=${net0/mac}";
+} else {
+      if option client-arch = 00:07 {
+         filename "ipxe.efi";
+      }  else {
+         filename "ipxe.pxe";
+      }
+}
+```
+
+Replace `<server-ip>` with the IP address of your server.
