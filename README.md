@@ -32,6 +32,32 @@ Alias /ipxe /opt/ipxe-bootconfig
 </Directory>
 ```
 
+## nginx configuration
+
+nginx does not support CGI natively — `fcgiwrap` is required to execute the script:
+
+```bash
+# Debian/Ubuntu
+apt install fcgiwrap
+
+# openSUSE
+zypper install fcgiwrap
+systemctl enable --now fcgiwrap.socket
+```
+
+```nginx
+server {
+    listen 80;
+    server_name _;
+
+    location = /ipxe/bootconfig.py {
+        fastcgi_pass unix:/run/fcgiwrap.socket;
+        fastcgi_param SCRIPT_FILENAME /opt/ipxe-bootscript/bootconfig.py;
+        include fastcgi_params;
+    }
+}
+```
+
 ## DHCP configuration
 
 ```
