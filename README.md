@@ -206,7 +206,7 @@ The container serves the CGI bootscript on port **8080** and the admin WebUI on 
 
 ```bash
 # Build
-podman build -t ipxe-bootscript .
+podman build -f container/Containerfile -t ipxe-bootscript .
 
 # Run (mount a directory for the SQLite database)
 podman run -d \

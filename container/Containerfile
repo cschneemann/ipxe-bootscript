@@ -23,7 +23,7 @@ VOLUME ["/data"]
 # 8080 → iPXE bootscript (CGI), 5000 → admin WebUI (Flask)
 EXPOSE 8080 5000
 
-COPY entrypoint.sh .
+COPY container/entrypoint.sh entrypoint.sh
 RUN chmod +x entrypoint.sh
 
 ENTRYPOINT ["./entrypoint.sh"]
