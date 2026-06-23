@@ -58,12 +58,29 @@ server {
 }
 ```
 
+## Container (Podman / Docker)
+
+```bash
+# Build
+podman build -t ipxe-bootscript .
+
+# Run
+podman run -d \
+  -p 8080:8080 \
+  -v /etc/ipxe/bootconfig.yaml:/app/bootconfig.yaml:ro \
+  ipxe-bootscript
+```
+
+The `BOOT_PORT` environment variable controls the listening port (default: `8080`).
+
 ## DHCP configuration
 
-```
+### Apache / nginx
+
+```dhcp
 option client-arch code 93 = unsigned integer 16;
 if exists user-class and option user-class = "iPXE" {
-      filename "http://192.168.254.3/ipxe/bootconfig.py?boot=${net0/mac}";
+      filename "http://<server-ip>/ipxe/bootconfig.py?boot=${net0/mac}";
 } else {
       if option client-arch = 00:07 {
          filename "ipxe.efi";
@@ -72,3 +89,20 @@ if exists user-class and option user-class = "iPXE" {
       }
 }
 ```
+
+### Container
+
+```dhcp
+option client-arch code 93 = unsigned integer 16;
+if exists user-class and option user-class = "iPXE" {
+      filename "http://<server-ip>:8080/cgi-bin/bootconfig.py?boot=${net0/mac}";
+} else {
+      if option client-arch = 00:07 {
+         filename "ipxe.efi";
+      }  else {
+         filename "ipxe.pxe";
+      }
+}
+```
+
+Replace `<server-ip>` with the IP address of your server.
