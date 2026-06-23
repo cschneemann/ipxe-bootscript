@@ -61,7 +61,7 @@ server {
 
 ```bash
 # Build
-podman build -t ipxe-bootscript .
+podman build -f container/Containerfile -t ipxe-bootscript .
 
 # Run
 podman run -d \

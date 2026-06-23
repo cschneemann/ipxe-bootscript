@@ -16,7 +16,7 @@ COPY bootconfig.yaml.example bootconfig.yaml
 # 8080 → iPXE bootscript (CGI)
 EXPOSE 8080
 
-COPY entrypoint.sh .
+COPY container/entrypoint.sh entrypoint.sh
 RUN chmod +x entrypoint.sh
 
 ENTRYPOINT ["./entrypoint.sh"]
