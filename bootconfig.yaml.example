@@ -1,3 +1,15 @@
+# Optional: read boot configurations from a SQLite database instead of this file.
+# If set, the 'default' and MAC/hostname entries below are ignored.
+# The database must have a table:
+#   CREATE TABLE bootconfig (
+#       identifier TEXT PRIMARY KEY,
+#       kernel     TEXT NOT NULL,
+#       initrd     TEXT NOT NULL,
+#       parameter  TEXT NOT NULL
+#   );
+# Use 'default' as identifier for the fallback entry.
+#database: "/etc/ipxe/bootconfig.db"
+
 default:
     kernel: "http://download.opensuse.org/tumbleweed/repo/oss/boot/x86_64/loader/linux"
     initrd: "http://download.opensuse.org/tumbleweed/repo/oss/boot/x86_64/loader/initrd"

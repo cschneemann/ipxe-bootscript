@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-lg-7">
+  <div class="d-flex align-items-center mb-3 gap-3">
+    <a href="{{ url_for('index') }}" class="text-decoration-none text-muted">&larr; Zurück</a>
+    <h4 class="mb-0">{{ title }}</h4>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Identifier</label>
+          <input type="text" name="identifier" class="form-control font-monospace"
+                 placeholder='z.B. "default", "aa:bb:cc:dd:ee:ff" oder "aa:bb:cc"'
+                 value="{{ entry.identifier if entry else '' }}"
+                 {% if entry %}readonly{% endif %}
+                 required>
+          {% if entry %}
+            <div class="form-text">Identifier kann nachträglich nicht geändert werden.</div>
+          {% else %}
+            <div class="form-text">
+              MAC-Adressen müssen <strong>kleingeschrieben</strong> sein.
+              Präfixe (z.B. <code>aa:bb:cc</code>) matchen alle MACs mit diesem Anfang.
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Kernel URL</label>
+          <input type="text" name="kernel" class="form-control font-monospace"
+                 placeholder="http://example.com/boot/linux"
+                 value="{{ entry.kernel if entry else '' }}"
+                 required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Initrd URL</label>
+          <input type="text" name="initrd" class="form-control font-monospace"
+                 placeholder="http://example.com/boot/initrd"
+                 value="{{ entry.initrd if entry else '' }}"
+                 required>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Kernel-Parameter</label>
+          <input type="text" name="parameter" class="form-control font-monospace"
+                 placeholder="splash=silent install=http://example.com/repo/"
+                 value="{{ entry.parameter if entry else '' }}"
+                 required>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Speichern</button>
+          <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Abbrechen</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

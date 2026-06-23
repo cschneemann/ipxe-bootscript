@@ -1,0 +1,29 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Application files
+COPY bootconfig.py admin.py ./
+COPY templates/ templates/
+
+# Python's CGI server looks for scripts under cgi-bin/
+RUN mkdir cgi-bin && ln -s /app/bootconfig.py cgi-bin/bootconfig.py
+
+# Default config: use SQLite database stored in the /data volume.
+# Override by mounting your own bootconfig.yaml to /app/bootconfig.yaml.
+RUN printf 'database: /data/bootconfig.db\n' > bootconfig.yaml
+
+# Persistent storage for the SQLite database
+VOLUME ["/data"]
+
+# 8080 → iPXE bootscript (CGI), 5000 → admin WebUI (Flask)
+EXPOSE 8080 5000
+
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]

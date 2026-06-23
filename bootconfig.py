@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import yaml
 import cgi
+import sqlite3
 #import cgitb;cgitb.enable()
 
 configfile = "./bootconfig.yaml"
@@ -19,8 +20,29 @@ def get_bootparam(obj, conf_type):
 
     return config["default"][conf_type]
 
+def load_from_db(db_path):
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT identifier, kernel, initrd, parameter FROM bootconfig")
+    rows = cursor.fetchall()
+    conn.close()
+    return {
+        row["identifier"]: {
+            "kernel": row["kernel"],
+            "initrd": row["initrd"],
+            "parameter": row["parameter"],
+        }
+        for row in rows
+    }
+
 with open(configfile, 'r') as yamlobjects:
-    config = yaml.load(yamlobjects, Loader=yaml.FullLoader)
+    yaml_config = yaml.load(yamlobjects, Loader=yaml.FullLoader)
+
+if "database" in yaml_config:
+    config = load_from_db(yaml_config["database"])
+else:
+    config = yaml_config
 
 arguments = cgi.FieldStorage()
 if "boot" not in arguments:

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Boot-Einträge</h4>
+  <a href="{{ url_for('add') }}" class="btn btn-primary">+ Neuer Eintrag</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th style="width:18%">Identifier</th>
+          <th style="width:22%">Kernel</th>
+          <th style="width:22%">Initrd</th>
+          <th>Parameter</th>
+          <th style="width:130px"></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for entry in entries %}
+        <tr>
+          <td>
+            {% if entry.identifier == 'default' %}
+              <span class="badge bg-secondary me-1">default</span>
+            {% else %}
+              <code>{{ entry.identifier }}</code>
+            {% endif %}
+          </td>
+          <td class="text-truncate" style="max-width:0" title="{{ entry.kernel }}">
+            <small class="font-monospace">{{ entry.kernel }}</small>
+          </td>
+          <td class="text-truncate" style="max-width:0" title="{{ entry.initrd }}">
+            <small class="font-monospace">{{ entry.initrd }}</small>
+          </td>
+          <td class="text-truncate" style="max-width:0" title="{{ entry.parameter }}">
+            <small class="font-monospace">{{ entry.parameter }}</small>
+          </td>
+          <td class="text-end">
+            <a href="{{ url_for('edit', identifier=entry.identifier) }}"
+               class="btn btn-sm btn-outline-secondary">Bearbeiten</a>
+            <form method="post"
+                  action="{{ url_for('delete', identifier=entry.identifier) }}"
+                  class="d-inline"
+                  data-identifier="{{ entry.identifier }}"
+                  onsubmit="return confirm('Eintrag \'' + this.dataset.identifier + '\' wirklich löschen?')">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Löschen</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            Keine Einträge vorhanden. <a href="{{ url_for('add') }}">Jetzt einen erstellen.</a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
