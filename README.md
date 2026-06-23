@@ -2,10 +2,9 @@
 
 Simple script that runs on a webserver and returns a default bootconfiguration or a host/group specific one to ipxe Clients.
 
-
 ## Example bootconfig.yaml
 
-```
+```yaml
 default:
     kernel: "http://download.opensuse.org/tumbleweed/repo/oss/boot/x86_64/loader/linux"
     initrd: "http://download.opensuse.org/tumbleweed/repo/oss/boot/x86_64/loader/initrd"
@@ -21,7 +20,7 @@ default:
 
 ## Apache2 configuration
 
-```
+```apache
 Alias /ipxe /opt/ipxe-bootconfig
 
 <Directory /opt/ipxe-bootconfig>
@@ -133,7 +132,7 @@ if exists user-class and option user-class = "iPXE" {
 }
 ```
 
-## Container
+### Container
 
 ```dhcp
 option client-arch code 93 = unsigned integer 16;
