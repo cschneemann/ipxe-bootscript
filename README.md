@@ -58,6 +58,56 @@ Use `default` as the identifier for the fallback entry. When `database` is set, 
 
 The admin WebUI (see below) can create and manage the database automatically.
 
+#### CLI: database setup and example entries
+
+```bash
+# Create database and table
+sqlite3 /etc/ipxe/bootconfig.db "
+CREATE TABLE IF NOT EXISTS bootconfig (
+    identifier TEXT PRIMARY KEY,
+    kernel     TEXT NOT NULL,
+    initrd     TEXT NOT NULL,
+    parameter  TEXT NOT NULL
+);"
+
+# Add default fallback entry
+sqlite3 /etc/ipxe/bootconfig.db "
+INSERT INTO bootconfig VALUES (
+    'default',
+    'http://download.opensuse.org/tumbleweed/repo/oss/boot/x86_64/loader/linux',
+    'http://download.opensuse.org/tumbleweed/repo/oss/boot/x86_64/loader/initrd',
+    'splash=silent install=http://download.opensuse.org/tumbleweed/repo/oss/'
+);"
+
+# Add entry for a specific host (full MAC address, must be lowercase)
+sqlite3 /etc/ipxe/bootconfig.db "
+INSERT INTO bootconfig VALUES (
+    'aa:bb:cc:dd:ee:ff',
+    'http://example.com/boot/linux',
+    'http://example.com/boot/initrd',
+    'splash=silent install=http://example.com/repo/'
+);"
+
+# Add entry for a group of hosts (MAC prefix)
+sqlite3 /etc/ipxe/bootconfig.db "
+INSERT INTO bootconfig VALUES (
+    'aa:bb:cc',
+    'http://example.com/boot/linux',
+    'http://example.com/boot/initrd',
+    'splash=silent install=http://example.com/repo/'
+);"
+
+# List all entries
+sqlite3 -column -header /etc/ipxe/bootconfig.db "SELECT * FROM bootconfig;"
+
+# Update an entry
+sqlite3 /etc/ipxe/bootconfig.db "
+UPDATE bootconfig SET parameter='splash=silent' WHERE identifier='aa:bb:cc:dd:ee:ff';"
+
+# Delete an entry
+sqlite3 /etc/ipxe/bootconfig.db "DELETE FROM bootconfig WHERE identifier='aa:bb:cc:dd:ee:ff';"
+```
+
 ### Wildcard / prefix matching
 
 Identifiers support prefix matching. An identifier of `aa:bb:cc` matches any client whose MAC address starts with `aa:bb:cc`. The lookup order is:
