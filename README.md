@@ -73,6 +73,49 @@ podman run -d \
 
 The `BOOT_PORT` environment variable controls the listening port (default: `8080`).
 
+## Reverse proxy for the container
+
+A reverse proxy in front of the container allows keeping the canonical
+`/ipxe/bootconfig.py` URL and avoids exposing port 8080 directly.
+
+### Apache2
+
+Requires `mod_proxy` and `mod_proxy_http`:
+
+```bash
+a2enmod proxy proxy_http
+```
+
+```apache
+<VirtualHost *:80>
+    ServerName ipxe.example.com
+
+    ProxyPass        /ipxe/bootconfig.py http://127.0.0.1:8080/cgi-bin/bootconfig.py
+    ProxyPassReverse /ipxe/bootconfig.py http://127.0.0.1:8080/cgi-bin/bootconfig.py
+</VirtualHost>
+```
+
+### nginx
+
+```nginx
+server {
+    listen 80;
+    server_name ipxe.example.com;
+
+    location = /ipxe/bootconfig.py {
+        proxy_pass http://127.0.0.1:8080/cgi-bin/bootconfig.py;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+With a reverse proxy in place the DHCP filename URL stays the same as for
+a direct Apache/nginx deployment — no `/cgi-bin/` prefix needed:
+
+```dhcp
+filename "http://<server-ip>/ipxe/bootconfig.py?boot=${net0/mac}";
+```
+
 ## DHCP configuration
 
 ### Apache / nginx
@@ -90,7 +133,7 @@ if exists user-class and option user-class = "iPXE" {
 }
 ```
 
-### Container
+## Container
 
 ```dhcp
 option client-arch code 93 = unsigned integer 16;
