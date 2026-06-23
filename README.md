@@ -108,6 +108,45 @@ UPDATE bootconfig SET parameter='splash=silent' WHERE identifier='aa:bb:cc:dd:ee
 sqlite3 /etc/ipxe/bootconfig.db "DELETE FROM bootconfig WHERE identifier='aa:bb:cc:dd:ee:ff';"
 ```
 
+#### CLI: migrate existing bootconfig.yaml entries into the database
+
+Add `database:` to your `bootconfig.yaml` first, then run:
+
+```bash
+python3 - <<'EOF'
+import sqlite3, yaml
+
+with open("bootconfig.yaml") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+
+db_path = config.pop("database", None)
+if not db_path:
+    raise SystemExit("No 'database' key found in bootconfig.yaml")
+
+conn = sqlite3.connect(db_path)
+conn.execute("""
+    CREATE TABLE IF NOT EXISTS bootconfig (
+        identifier TEXT PRIMARY KEY,
+        kernel     TEXT NOT NULL,
+        initrd     TEXT NOT NULL,
+        parameter  TEXT NOT NULL
+    )
+""")
+
+for identifier, values in config.items():
+    conn.execute(
+        "INSERT OR IGNORE INTO bootconfig VALUES (?, ?, ?, ?)",
+        (identifier, values["kernel"], values["initrd"], values["parameter"]),
+    )
+    print(f"Imported: {identifier}")
+
+conn.commit()
+conn.close()
+EOF
+```
+
+Existing database entries are not overwritten (`INSERT OR IGNORE`). Remove that qualifier and use `INSERT OR REPLACE` if you want to force an update.
+
 ### Wildcard / prefix matching
 
 Identifiers support prefix matching. An identifier of `aa:bb:cc` matches any client whose MAC address starts with `aa:bb:cc`. The lookup order is:
